@@ -1,0 +1,7 @@
+{
+  "name": "aichat-terminal",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
