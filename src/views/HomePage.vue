@@ -23,14 +23,11 @@
 
     <ion-content :fullscreen="true">
       <ion-list>
-        <ion-item v-for="(item, index) in items">
-          <ion-avatar slot="start">
-            <img :src="'https://picsum.photos/80/80?random=' + index" alt="avatar" />
-          </ion-avatar>
-          <ion-label>{{ item }}</ion-label>
+        <ion-item v-for="(message, index) in messages">
+          <msg-card :index="index" :is-owner="true" />
         </ion-item>
       </ion-list>
-      <ion-infinite-scroll @ionInfinite="ionInfinite">
+      <ion-infinite-scroll>
         <ion-infinite-scroll-content></ion-infinite-scroll-content>
       </ion-infinite-scroll>
     </ion-content>
@@ -65,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+import Message from '@/types/message'
 import {
   IonContent,
   IonHeader,
@@ -83,7 +81,6 @@ import {
   IonRow,
   IonCol,
   IonTextarea,
-  IonAvatar,
   IonInfiniteScroll,
   IonInfiniteScrollContent
 } from '@ionic/vue'
@@ -94,6 +91,16 @@ import {
   settingsSharp,
   addSharp
 } from 'ionicons/icons'
+import { onMounted, reactive } from 'vue'
+import msgCard from '@/components/msgCard.vue'
+
+const messages = reactive<Message[]>([])
+
+onMounted(() => {
+  for (let i = 0; i < 1000; ++i) {
+    messages.push({ content: `Item: ${i}`, sender: 'abcd' })
+  }
+})
 </script>
 
 <style scoped>
