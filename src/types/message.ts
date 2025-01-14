@@ -7,3 +7,5 @@ export default class Message {
     this.sender = ''
   }
 }
+
+export const LOADING_FLAG = '^LoAdInG$'

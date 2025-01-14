@@ -22,12 +22,16 @@
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <ion-list>
-        <ion-item v-for="(message, index) in messages">
-          <msg-card :index="index" :is-owner="true" />
+      <ion-list class="ls-message">
+        <ion-item v-for="(message, index) in messages" class="border-0">
+          <msg-card
+            :index="index"
+            :content="message.content"
+            :is-owner="message.sender === 'self'"
+          />
         </ion-item>
       </ion-list>
-      <ion-infinite-scroll>
+      <ion-infinite-scroll position="top">
         <ion-infinite-scroll-content></ion-infinite-scroll-content>
       </ion-infinite-scroll>
     </ion-content>
@@ -42,10 +46,15 @@
               </ion-button>
             </ion-col>
             <ion-col>
-              <ion-textarea placeholder="Input something" fill="outline" required />
+              <ion-textarea
+                placeholder="Input something"
+                fill="outline"
+                required
+                v-model="questText"
+              />
             </ion-col>
             <ion-col size="auto">
-              <ion-button size="large">
+              <ion-button size="large" @click="onMsgSend">
                 <ion-icon aria-hidden="true" :icon="paperPlaneSharp" />
               </ion-button>
             </ion-col>
@@ -62,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import Message from '@/types/message'
+import Message, { LOADING_FLAG } from '@/types/message'
 import {
   IonContent,
   IonHeader,
@@ -82,7 +91,8 @@ import {
   IonCol,
   IonTextarea,
   IonInfiniteScroll,
-  IonInfiniteScrollContent
+  IonInfiniteScrollContent,
+  alertController
 } from '@ionic/vue'
 import {
   ellipsisVerticalSharp,
@@ -91,16 +101,56 @@ import {
   settingsSharp,
   addSharp
 } from 'ionicons/icons'
-import { onMounted, reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import msgCard from '@/components/msgCard.vue'
+import axios from 'axios'
 
 const messages = reactive<Message[]>([])
+const questText = ref<string>()
 
-onMounted(() => {
-  for (let i = 0; i < 1000; ++i) {
-    messages.push({ content: `Item: ${i}`, sender: 'abcd' })
+const baseURL = 'http://192.168.1.16:3000'
+const apiKey = 'sk-7477291782ea4ac4a51b995a344a746c'
+
+async function onMsgSend() {
+  messages.push({ content: questText.value as string, sender: 'self' })
+  messages.push({ content: LOADING_FLAG, sender: 'robot' })
+  const content = questText.value
+  questText.value = ''
+  const resp = await axios.post(
+    '/api/chat/completions',
+    {
+      model: 'qwen2:latest',
+      messages: [
+        {
+          role: 'user',
+          content
+        }
+      ]
+    },
+    {
+      baseURL,
+      headers: {
+        Authorization: `Bearer ${apiKey}`
+      }
+    }
+  )
+  if (resp.status !== 200) {
+    await alertController
+      .create({
+        header: 'Network Request Failed',
+        subHeader: 'Response Code ' + resp.status,
+        message: resp.statusText,
+        buttons: ['Action']
+      })
+      .then(alert => alert.present())
   }
-})
+  const { choices } = resp.data
+  console.log(messages[messages.length - 1].content)
+  messages.pop()
+  for (const choice of choices) {
+    messages.push({ content: choice.message.content, sender: choice.message.role })
+  }
+}
 </script>
 
 <style scoped>
