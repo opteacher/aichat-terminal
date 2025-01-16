@@ -22,8 +22,8 @@
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <ion-list class="ls-message">
-        <ion-item v-for="(message, index) in messages" class="border-0">
+      <ion-list lines="none">
+        <ion-item v-for="(message, index) in messages">
           <msg-card
             :index="index"
             :content="message.content"
@@ -31,7 +31,7 @@
           />
         </ion-item>
       </ion-list>
-      <ion-infinite-scroll position="top">
+      <ion-infinite-scroll position="bottom">
         <ion-infinite-scroll-content></ion-infinite-scroll-content>
       </ion-infinite-scroll>
     </ion-content>
@@ -51,6 +51,7 @@
                 fill="outline"
                 required
                 v-model="questText"
+                @keyup="e => (e.keyCode === 13 ? onMsgSend() : undefined)"
               />
             </ion-col>
             <ion-col size="auto">
@@ -145,7 +146,6 @@ async function onMsgSend() {
       .then(alert => alert.present())
   }
   const { choices } = resp.data
-  console.log(messages[messages.length - 1].content)
   messages.pop()
   for (const choice of choices) {
     messages.push({ content: choice.message.content, sender: choice.message.role })
