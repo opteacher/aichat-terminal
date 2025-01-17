@@ -1,8 +1,15 @@
 <template>
+  <ion-loading :is-open="loading" message="Loading Models" />
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-title>AI Chat Robot</ion-title>
+        <ion-title>
+          <ion-select aria-label="Model" interface="popover" v-model="selModel">
+            <ion-select-option v-for="[name, id] in Object.entries(mdlIds)" :value="id">
+              {{ name }}
+            </ion-select-option>
+          </ion-select>
+        </ion-title>
         <ion-buttons slot="end">
           <ion-button id="click-trigger">
             <ion-icon aria-hidden="true" :icon="ellipsisVerticalSharp" />
@@ -41,9 +48,21 @@
         <ion-grid :fixed="true">
           <ion-row>
             <ion-col size="auto">
-              <ion-button fill="outline" color="dark">
-                <ion-icon aria-hidden="true" :icon="micSharp" />
+              <ion-button
+                fill="outline"
+                :color="recording ? 'danger' : 'medium'"
+                @click="onRecordClick"
+              >
+                <ion-icon v-if="!recording" aria-hidden="true" :icon="micSharp" />
+                <ion-icon v-else aria-hidden="true" :icon="stopSharp" />
               </ion-button>
+              <ion-modal :is-open="recording">
+                <ion-content>
+                  <ion-button shape="round">
+                    <ion-icon slot="icon-only" aria-hidden="true" :icon="micSharp" />
+                  </ion-button>
+                </ion-content>
+              </ion-modal>
             </ion-col>
             <ion-col>
               <ion-textarea
@@ -93,24 +112,76 @@ import {
   IonTextarea,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
-  alertController
+  IonSelect,
+  IonSelectOption,
+  IonLoading,
+  IonModal
 } from '@ionic/vue'
 import {
   ellipsisVerticalSharp,
   micSharp,
   paperPlaneSharp,
   settingsSharp,
-  addSharp
+  addSharp,
+  stopSharp
 } from 'ionicons/icons'
 import { reactive, ref } from 'vue'
 import msgCard from '@/components/msgCard.vue'
 import axios from 'axios'
+import { onMounted } from 'vue'
+import { VoiceRecorder } from 'capacitor-voice-recorder'
+import { alertMessage } from '@/utils'
 
 const messages = reactive<Message[]>([])
 const questText = ref<string>()
+const mdlIds = ref({})
+const selModel = ref('')
+const loading = ref(false)
+const recording = ref(false)
 
 const baseURL = 'http://192.168.1.16:3000'
 const apiKey = 'sk-7477291782ea4ac4a51b995a344a746c'
+const reqOptions = {
+  baseURL,
+  headers: {
+    Authorization: `Bearer ${apiKey}`
+  }
+}
+
+onMounted(async () => {
+  loading.value = true
+  // 检查录音可用
+  const canRecord = await VoiceRecorder.canDeviceVoiceRecord()
+  if (!canRecord.value) {
+    loading.value = false
+    return alertMessage('Unsupport voice recording device!', 'Runtime Environment Failed')
+  }
+  // 获取录音权限
+  if (!(await VoiceRecorder.hasAudioRecordingPermission().then(has => has.value))) {
+    const reqRecord = await VoiceRecorder.requestAudioRecordingPermission()
+    if (!reqRecord.value) {
+      loading.value = false
+      return alertMessage(
+        'Request audio recording permission failed!',
+        'Runtime Environment Failed'
+      )
+    }
+  }
+  // 获取所有可用模型
+  const resp = await axios.get('/api/models', reqOptions)
+  if (resp.status !== 200) {
+    loading.value = false
+    return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)
+  }
+  const models = resp.data.data as { id: string; name: string }[]
+  mdlIds.value = Object.fromEntries(models.map(mdl => [mdl.name, mdl.id]))
+  if (!models.length) {
+    loading.value = false
+    return alertMessage('No available model can be choiced!', 'Ollama Config Failed')
+  }
+  selModel.value = models[0].id
+  loading.value = false
+})
 
 async function onMsgSend() {
   messages.push({ content: questText.value as string, sender: 'self' })
@@ -120,7 +191,7 @@ async function onMsgSend() {
   const resp = await axios.post(
     '/api/chat/completions',
     {
-      model: 'qwen2:latest',
+      model: selModel.value,
       messages: [
         {
           role: 'user',
@@ -128,27 +199,24 @@ async function onMsgSend() {
         }
       ]
     },
-    {
-      baseURL,
-      headers: {
-        Authorization: `Bearer ${apiKey}`
-      }
-    }
+    reqOptions
   )
   if (resp.status !== 200) {
-    await alertController
-      .create({
-        header: 'Network Request Failed',
-        subHeader: 'Response Code ' + resp.status,
-        message: resp.statusText,
-        buttons: ['Action']
-      })
-      .then(alert => alert.present())
+    return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)
   }
   const { choices } = resp.data
   messages.pop()
   for (const choice of choices) {
     messages.push({ content: choice.message.content, sender: choice.message.role })
+  }
+}
+async function onRecordClick() {
+  recording.value = !recording.value
+  if (recording.value) {
+    await VoiceRecorder.startRecording()
+  } else {
+    const { value } = await VoiceRecorder.stopRecording()
+    console.log(value.recordDataBase64.length, value.mimeType, value.msDuration)
   }
 }
 </script>

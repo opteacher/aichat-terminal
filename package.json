@@ -21,6 +21,7 @@
     "@ionic/vue": "^8.0.0",
     "@ionic/vue-router": "^8.0.0",
     "axios": "^1.7.9",
+    "capacitor-voice-recorder": "^6.0.3",
     "ionicons": "^7.0.0",
     "marked": "^15.0.6",
     "vue": "^3.3.0",
