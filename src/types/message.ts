@@ -9,3 +9,4 @@ export default class Message {
 }
 
 export const LOADING_FLAG = '^LoAdInG$'
+export const RECORDING_FLAG = '^ReCoRdInG$'

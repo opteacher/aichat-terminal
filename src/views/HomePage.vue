@@ -12,13 +12,13 @@
         </ion-title>
         <ion-buttons slot="end">
           <ion-button id="click-trigger">
-            <ion-icon aria-hidden="true" :icon="ellipsisVerticalSharp" />
+            <ion-icon aria-hidden="true" :icon="ellipsisVertical" />
           </ion-button>
           <ion-popover trigger="click-trigger" trigger-action="click">
             <ion-content>
               <ion-list>
                 <ion-item button detail lines="none">
-                  <ion-icon aria-hidden="true" slot="start" :icon="settingsSharp"></ion-icon>
+                  <ion-icon aria-hidden="true" slot="start" :icon="settings"></ion-icon>
                   <ion-label>Settings</ion-label>
                 </ion-item>
               </ion-list>
@@ -49,20 +49,14 @@
           <ion-row>
             <ion-col size="auto">
               <ion-button
+                shape="round"
                 fill="outline"
                 :color="recording ? 'danger' : 'medium'"
                 @click="onRecordClick"
               >
-                <ion-icon v-if="!recording" aria-hidden="true" :icon="micSharp" />
-                <ion-icon v-else aria-hidden="true" :icon="stopSharp" />
+                <ion-icon v-if="recording" slot="icon-only" :icon="ellipse" />
+                <ion-icon v-else slot="icon-only" :icon="mic" />
               </ion-button>
-              <ion-modal :is-open="recording">
-                <ion-content>
-                  <ion-button shape="round">
-                    <ion-icon slot="icon-only" aria-hidden="true" :icon="micSharp" />
-                  </ion-button>
-                </ion-content>
-              </ion-modal>
             </ion-col>
             <ion-col>
               <ion-textarea
@@ -74,13 +68,13 @@
               />
             </ion-col>
             <ion-col size="auto">
-              <ion-button size="large" @click="onMsgSend">
-                <ion-icon aria-hidden="true" :icon="paperPlaneSharp" />
+              <ion-button size="large" shape="round" @click="onMsgSend">
+                <ion-icon slot="icon-only" :icon="paperPlane" />
               </ion-button>
             </ion-col>
             <ion-col size="auto">
-              <ion-button fill="outline">
-                <ion-icon aria-hidden="true" :icon="addSharp" />
+              <ion-button fill="outline" shape="round">
+                <ion-icon slot="icon-only" :icon="add" />
               </ion-button>
             </ion-col>
           </ion-row>
@@ -91,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import Message, { LOADING_FLAG } from '@/types/message'
+import Message, { LOADING_FLAG, RECORDING_FLAG } from '@/types/message'
 import {
   IonContent,
   IonHeader,
@@ -114,16 +108,15 @@ import {
   IonInfiniteScrollContent,
   IonSelect,
   IonSelectOption,
-  IonLoading,
-  IonModal
+  IonLoading
 } from '@ionic/vue'
 import {
-  ellipsisVerticalSharp,
-  micSharp,
-  paperPlaneSharp,
-  settingsSharp,
-  addSharp,
-  stopSharp
+  ellipsisVertical,
+  mic,
+  paperPlane,
+  settings,
+  add,
+  ellipse
 } from 'ionicons/icons'
 import { reactive, ref } from 'vue'
 import msgCard from '@/components/msgCard.vue'
@@ -213,8 +206,10 @@ async function onMsgSend() {
 async function onRecordClick() {
   recording.value = !recording.value
   if (recording.value) {
+    messages.push({ content: RECORDING_FLAG, sender: 'self' })
     await VoiceRecorder.startRecording()
   } else {
+    messages.pop()
     const { value } = await VoiceRecorder.stopRecording()
     console.log(value.recordDataBase64.length, value.mimeType, value.msDuration)
   }
