@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import Message, { LOADING_FLAG, RECORDING_FLAG } from '@/types/message'
+import Message, { LOADING_FLAG, RECORDING_FLAG, VOICE_FLAG } from '@/types/message'
 import {
   IonContent,
   IonHeader,
@@ -110,20 +110,13 @@ import {
   IonSelectOption,
   IonLoading
 } from '@ionic/vue'
-import {
-  ellipsisVertical,
-  mic,
-  paperPlane,
-  settings,
-  add,
-  ellipse
-} from 'ionicons/icons'
+import { ellipsisVertical, mic, paperPlane, settings, add, ellipse } from 'ionicons/icons'
 import { reactive, ref } from 'vue'
 import msgCard from '@/components/msgCard.vue'
 import axios from 'axios'
 import { onMounted } from 'vue'
 import { VoiceRecorder } from 'capacitor-voice-recorder'
-import { alertMessage } from '@/utils'
+import { alertMessage, base64ToAudio } from '@/utils'
 
 const messages = reactive<Message[]>([])
 const questText = ref<string>()
@@ -211,7 +204,25 @@ async function onRecordClick() {
   } else {
     messages.pop()
     const { value } = await VoiceRecorder.stopRecording()
-    console.log(value.recordDataBase64.length, value.mimeType, value.msDuration)
+    console.log(value.mimeType, value.recordDataBase64)
+    // const mp3Blob = await base64ToAudio(value.recordDataBase64, value.mimeType)
+    // messages.push({
+    //   content: `${VOICE_FLAG},${URL.createObjectURL(mp3Blob)}`,
+    //   sender: 'self'
+    // })
+
+    // const formData = new FormData()
+    // formData.append('file', wavFile)
+    // const resp = await axios.post('/extract_text', formData, {
+    //   baseURL: 'http://192.168.1.16:8000',
+    //   headers: {
+    //     'Content-Type': 'multipart/form-data'
+    //   }
+    // })
+    // if (resp.status !== 200) {
+    //   return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)
+    // }
+    // console.log(resp.data)
   }
 }
 </script>

@@ -1,11 +1,19 @@
 <template>
   <ion-icon v-if="!isOwner" slot="start" :src="Robot" />
-  <ion-card :slot="isOwner ? 'end' : 'start'" class="max-w-[70%]">
+  <ion-card
+    :slot="isOwner ? 'end' : 'start'"
+    class="max-w-[70%]"
+    :button="content.startsWith(VOICE_FLAG)"
+  >
     <ion-card-content>
       <ion-spinner v-if="content === LOADING_FLAG" name="dots" />
-      <ion-spinner v-else-if="content === RECORDING_FLAG">
-        <ion-icon slot="icon-only" :icon="mic" />
-      </ion-spinner>
+      <ion-item v-else-if="content === RECORDING_FLAG">
+        <ion-spinner slot="start" />
+        <ion-label>Recording</ion-label>
+      </ion-item>
+      <audio v-else-if="content.startsWith(VOICE_FLAG)" controls>
+        <source :src="content.substring(VOICE_FLAG.length + 1)" type="audio/mpeg" />
+      </audio>
       <div v-else v-html="mdContent" />
     </ion-card-content>
   </ion-card>
@@ -13,16 +21,17 @@
 </template>
 
 <script setup lang="ts">
-import { IonCard, IonCardContent, IonIcon, IonSpinner } from '@ionic/vue'
-import { mic, personOutline } from 'ionicons/icons'
+import { IonCard, IonCardContent, IonIcon, IonSpinner, IonItem, IonLabel } from '@ionic/vue'
+import { ellipsisHorizontal, personOutline, volumeHigh } from 'ionicons/icons'
 import { marked } from 'marked'
-import { LOADING_FLAG, RECORDING_FLAG } from '@/types/message'
+import { LOADING_FLAG, RECORDING_FLAG, VOICE_FLAG } from '@/types/message'
 import { ref, watch } from 'vue'
 import Robot from '@/assets/robot (1).svg'
 
 const props = defineProps({
   index: { type: Number, required: true },
   content: { type: String, required: true },
+  files: { type: Array as () => File[], default: [] },
   isOwner: { type: Boolean, default: false }
 })
 const mdContent = ref(fmtContent())

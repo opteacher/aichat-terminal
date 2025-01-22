@@ -22,7 +22,9 @@
     "@ionic/vue-router": "^8.0.0",
     "axios": "^1.7.9",
     "capacitor-voice-recorder": "^6.0.3",
+    "form-data": "^4.0.1",
     "ionicons": "^7.0.0",
+    "lamejs": "zhuker/lamejs",
     "marked": "^15.0.6",
     "vue": "^3.3.0",
     "vue-router": "^4.2.0"
