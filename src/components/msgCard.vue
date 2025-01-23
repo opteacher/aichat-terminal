@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { IonCard, IonCardContent, IonIcon, IonSpinner, IonItem, IonLabel } from '@ionic/vue'
-import { ellipsisHorizontal, personOutline, volumeHigh } from 'ionicons/icons'
+import { personOutline } from 'ionicons/icons'
 import { marked } from 'marked'
 import { LOADING_FLAG, RECORDING_FLAG, VOICE_FLAG } from '@/types/message'
 import { ref, watch } from 'vue'
@@ -31,7 +31,6 @@ import Robot from '@/assets/robot (1).svg'
 const props = defineProps({
   index: { type: Number, required: true },
   content: { type: String, required: true },
-  files: { type: Array as () => File[], default: [] },
   isOwner: { type: Boolean, default: false }
 })
 const mdContent = ref(fmtContent())

@@ -17,10 +17,42 @@
           <ion-popover trigger="click-trigger" trigger-action="click">
             <ion-content>
               <ion-list>
-                <ion-item button detail lines="none">
+                <ion-item button detail lines="none" id="mdlSettings">
                   <ion-icon aria-hidden="true" slot="start" :icon="settings"></ion-icon>
                   <ion-label>Settings</ion-label>
                 </ion-item>
+                <ion-modal ref="settingsModal" trigger="mdlSettings">
+                  <ion-header>
+                    <ion-toolbar>
+                      <ion-title>Settings</ion-title>
+                      <ion-buttons slot="end">
+                        <ion-button @click="() => settingsModal.$el.dismiss(null, 'cancel')">
+                          Cancel
+                        </ion-button>
+                      </ion-buttons>
+                    </ion-toolbar>
+                  </ion-header>
+                  <ion-content class="ion-padding">
+                    <ion-item>
+                      <ion-input
+                        label="Base URL"
+                        label-placement="stacked"
+                        type="text"
+                        clearInput
+                        v-model="baseURL"
+                      />
+                    </ion-item>
+                    <ion-item>
+                      <ion-input
+                        label="API Key"
+                        label-placement="stacked"
+                        type="text"
+                        clearInput
+                        v-model="apiKey"
+                      />
+                    </ion-item>
+                  </ion-content>
+                </ion-modal>
               </ion-list>
             </ion-content>
           </ion-popover>
@@ -108,7 +140,9 @@ import {
   IonInfiniteScrollContent,
   IonSelect,
   IonSelectOption,
-  IonLoading
+  IonLoading,
+  IonModal,
+  IonInput
 } from '@ionic/vue'
 import { ellipsisVertical, mic, paperPlane, settings, add, ellipse } from 'ionicons/icons'
 import { reactive, ref } from 'vue'
@@ -116,7 +150,7 @@ import msgCard from '@/components/msgCard.vue'
 import axios from 'axios'
 import { onMounted } from 'vue'
 import { VoiceRecorder } from 'capacitor-voice-recorder'
-import { alertMessage, base64ToAudio } from '@/utils'
+import { alertMessage, blobToMp3 } from '@/utils'
 
 const messages = reactive<Message[]>([])
 const questText = ref<string>()
@@ -124,15 +158,9 @@ const mdlIds = ref({})
 const selModel = ref('')
 const loading = ref(false)
 const recording = ref(false)
-
-const baseURL = 'http://192.168.1.16:3000'
-const apiKey = 'sk-7477291782ea4ac4a51b995a344a746c'
-const reqOptions = {
-  baseURL,
-  headers: {
-    Authorization: `Bearer ${apiKey}`
-  }
-}
+const settingsModal = ref()
+const baseURL = ref('http://192.168.1.16:3000')
+const apiKey = ref('sk-7477291782ea4ac4a51b995a344a746c')
 
 onMounted(async () => {
   loading.value = true
@@ -154,7 +182,12 @@ onMounted(async () => {
     }
   }
   // 获取所有可用模型
-  const resp = await axios.get('/api/models', reqOptions)
+  const resp = await axios.get('/api/models', {
+    baseURL: baseURL.value,
+    headers: {
+      Authorization: `Bearer ${apiKey.value}`
+    }
+  })
   if (resp.status !== 200) {
     loading.value = false
     return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)
@@ -185,7 +218,12 @@ async function onMsgSend() {
         }
       ]
     },
-    reqOptions
+    {
+      baseURL: baseURL.value,
+      headers: {
+        Authorization: `Bearer ${apiKey.value}`
+      }
+    }
   )
   if (resp.status !== 200) {
     return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)
@@ -204,20 +242,30 @@ async function onRecordClick() {
   } else {
     messages.pop()
     const { value } = await VoiceRecorder.stopRecording()
-    console.log(value.mimeType, value.recordDataBase64)
-    // const mp3Blob = await base64ToAudio(value.recordDataBase64, value.mimeType)
-    // messages.push({
-    //   content: `${VOICE_FLAG},${URL.createObjectURL(mp3Blob)}`,
-    //   sender: 'self'
-    // })
+    const mimeType = value.mimeType.split(';')[0]
+    const base64 = `data:${mimeType};base64,${value.recordDataBase64}`
+    console.log(base64)
+    messages.push({
+      content: `${VOICE_FLAG},${base64}`,
+      sender: 'self'
+    })
+
+    const byteString = atob(value.recordDataBase64)
+    const ia = new Int16Array(byteString.length)
+    for (let i = 0; i < byteString.length; ++i) {
+      ia[i] = byteString.charCodeAt(i)
+    }
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(blobToMp3(ia))
+    link.download = 'abcd.mp3'
+    link.style.display = 'none'
+    link.click()
+    link.remove()
 
     // const formData = new FormData()
-    // formData.append('file', wavFile)
+    // formData.append('file', blob)
     // const resp = await axios.post('/extract_text', formData, {
-    //   baseURL: 'http://192.168.1.16:8000',
-    //   headers: {
-    //     'Content-Type': 'multipart/form-data'
-    //   }
+    //   baseURL: 'http://192.168.1.16:8000'
     // })
     // if (resp.status !== 200) {
     //   return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)
