@@ -12,7 +12,7 @@
         <ion-label>Recording</ion-label>
       </ion-item>
       <audio v-else-if="content.startsWith(VOICE_FLAG)" controls>
-        <source :src="content.substring(VOICE_FLAG.length + 1)" type="audio/mpeg" />
+        <source :src="mdContent" type="audio/webm" />
       </audio>
       <div v-else v-html="mdContent" />
     </ion-card-content>
@@ -45,8 +45,12 @@ watch(
 function fmtContent() {
   if (props.content === LOADING_FLAG || props.content === RECORDING_FLAG) {
     return props.content
+  } else if (props.content.startsWith(VOICE_FLAG)) {
+    // const blob = base64ToBlob(props.content.substring(VOICE_FLAG.length + 1))
+    // return URL.createObjectURL(blob)
+    return props.content.substring(VOICE_FLAG.length + 1)
   } else {
-    return marked.parse(props.content)
+    return marked.parse(props.content) as string
   }
 }
 </script>

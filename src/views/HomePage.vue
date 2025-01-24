@@ -150,7 +150,7 @@ import msgCard from '@/components/msgCard.vue'
 import axios from 'axios'
 import { onMounted } from 'vue'
 import { VoiceRecorder } from 'capacitor-voice-recorder'
-import { alertMessage, blobToMp3 } from '@/utils'
+import { alertMessage, base64ToBlob, blobToMp3 } from '@/utils'
 
 const messages = reactive<Message[]>([])
 const questText = ref<string>()
@@ -242,21 +242,17 @@ async function onRecordClick() {
   } else {
     messages.pop()
     const { value } = await VoiceRecorder.stopRecording()
-    const mimeType = value.mimeType.split(';')[0]
-    const base64 = `data:${mimeType};base64,${value.recordDataBase64}`
-    console.log(base64)
+    const base64 = `data:${value.mimeType};base64,${value.recordDataBase64}`
     messages.push({
       content: `${VOICE_FLAG},${base64}`,
       sender: 'self'
     })
 
-    const byteString = atob(value.recordDataBase64)
-    const ia = new Int16Array(byteString.length)
-    for (let i = 0; i < byteString.length; ++i) {
-      ia[i] = byteString.charCodeAt(i)
-    }
+    
+    const blob = base64ToBlob(base64)
+    const mp3Blob = await W3Module.convertWebmToMP3(blob)
     const link = document.createElement('a')
-    link.href = window.URL.createObjectURL(blobToMp3(ia))
+    link.href = window.URL.createObjectURL(mp3Blob)
     link.download = 'abcd.mp3'
     link.style.display = 'none'
     link.click()
