@@ -150,7 +150,9 @@ import msgCard from '@/components/msgCard.vue'
 import axios from 'axios'
 import { onMounted } from 'vue'
 import { VoiceRecorder } from 'capacitor-voice-recorder'
-import { alertMessage, base64ToBlob, blobToMp3 } from '@/utils'
+import { alertMessage, base64ToBlob } from '@/utils'
+import { FFmpeg } from '@ffmpeg/ffmpeg'
+import { fetchFile, toBlobURL } from '@ffmpeg/util'
 
 const messages = reactive<Message[]>([])
 const questText = ref<string>()
@@ -161,6 +163,8 @@ const recording = ref(false)
 const settingsModal = ref()
 const baseURL = ref('http://192.168.1.16:3000')
 const apiKey = ref('sk-7477291782ea4ac4a51b995a344a746c')
+const unpkgURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
+const ffmpeg = new FFmpeg()
 
 onMounted(async () => {
   loading.value = true
@@ -180,6 +184,16 @@ onMounted(async () => {
         'Runtime Environment Failed'
       )
     }
+  }
+  // 加载FFmpeg
+  if (!ffmpeg.loaded) {
+    ffmpeg.on('log', ({ type, message }) => {
+      console.log(type, message)
+    })
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${unpkgURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${unpkgURL}/ffmpeg-core.wasm`, 'application/wasm')
+    })
   }
   // 获取所有可用模型
   const resp = await axios.get('/api/models', {
@@ -243,30 +257,33 @@ async function onRecordClick() {
     messages.pop()
     const { value } = await VoiceRecorder.stopRecording()
     const base64 = `data:${value.mimeType};base64,${value.recordDataBase64}`
+    const blob = base64ToBlob(base64)
+    await ffmpeg.writeFile('input.webm', await fetchFile(blob))
+    await ffmpeg.exec(['-i', 'input.webm', 'output.wav'])
+    const data = (await ffmpeg.readFile('output.wav')) as Uint8Array
+    const wavBlob = new Blob([data.buffer as ArrayBuffer], { type: 'audio/wav' })
+    const wavHref = window.URL.createObjectURL(wavBlob)
     messages.push({
-      content: `${VOICE_FLAG},${base64}`,
+      content: `${VOICE_FLAG},${wavHref}`,
       sender: 'self'
     })
 
-    
-    const blob = base64ToBlob(base64)
-    const mp3Blob = await W3Module.convertWebmToMP3(blob)
     const link = document.createElement('a')
-    link.href = window.URL.createObjectURL(mp3Blob)
-    link.download = 'abcd.mp3'
+    link.href = wavHref
+    link.download = 'output.wav'
     link.style.display = 'none'
     link.click()
     link.remove()
 
-    // const formData = new FormData()
-    // formData.append('file', blob)
-    // const resp = await axios.post('/extract_text', formData, {
-    //   baseURL: 'http://192.168.1.16:8000'
-    // })
-    // if (resp.status !== 200) {
-    //   return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)
-    // }
-    // console.log(resp.data)
+    const formData = new FormData()
+    formData.append('file', new File([wavBlob], 'output.wav', { type: wavBlob.type }))
+    const resp = await axios.post('/extract_text', formData, {
+      baseURL: 'http://192.168.1.16:8000'
+    })
+    if (resp.status !== 200) {
+      return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)
+    }
+    console.log(resp.data)
   }
 }
 </script>

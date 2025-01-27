@@ -17,6 +17,8 @@
     "@capacitor/haptics": "6.0.2",
     "@capacitor/keyboard": "6.0.3",
     "@capacitor/status-bar": "6.0.2",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@ionic/pwa-elements": "^3.3.0",
     "@ionic/vue": "^8.0.0",
     "@ionic/vue-router": "^8.0.0",
