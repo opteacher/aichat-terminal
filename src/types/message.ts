@@ -2,9 +2,14 @@ export default class Message {
   content: string
   sender: string
 
-  constructor() {
-    this.content = ''
-    this.sender = ''
+  constructor(init?: any) {
+    if (init) {
+      this.content = init.content || ''
+      this.sender = init.sender || ''
+    } else {
+      this.content = ''
+      this.sender = ''
+    }
   }
 }
 

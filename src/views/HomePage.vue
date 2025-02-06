@@ -62,12 +62,8 @@
 
     <ion-content :fullscreen="true">
       <ion-list lines="none">
-        <ion-item v-for="(message, index) in messages">
-          <msg-card
-            :index="index"
-            :content="message.content"
-            :is-owner="message.sender === 'self'"
-          />
+        <ion-item v-for="(message, index) in messages" class="flex items-start">
+          <msg-card :index="index" :message="message" />
         </ion-item>
       </ion-list>
       <ion-infinite-scroll position="bottom">
@@ -86,7 +82,7 @@
                 :color="recording ? 'danger' : 'medium'"
                 @click="onRecordClick"
               >
-                <ion-icon v-if="recording" slot="icon-only" :icon="ellipse" />
+                <ion-icon v-if="recording" slot="icon-only" :icon="stop" />
                 <ion-icon v-else slot="icon-only" :icon="mic" />
               </ion-button>
             </ion-col>
@@ -144,7 +140,7 @@ import {
   IonModal,
   IonInput
 } from '@ionic/vue'
-import { ellipsisVertical, mic, paperPlane, settings, add, ellipse } from 'ionicons/icons'
+import { ellipsisVertical, mic, paperPlane, settings, add, stop } from 'ionicons/icons'
 import { reactive, ref } from 'vue'
 import msgCard from '@/components/msgCard.vue'
 import axios from 'axios'
@@ -216,10 +212,12 @@ onMounted(async () => {
   loading.value = false
 })
 
-async function onMsgSend() {
-  messages.push({ content: questText.value as string, sender: 'self' })
-  messages.push({ content: LOADING_FLAG, sender: 'robot' })
-  const content = questText.value
+async function onMsgSend(content?: string) {
+  if (!content) {
+    content = questText.value as string
+  }
+  messages.push(new Message({ content, sender: 'self' }))
+  messages.push(new Message({ content: LOADING_FLAG, sender: 'robot' }))
   questText.value = ''
   const resp = await axios.post(
     '/api/chat/completions',
@@ -245,16 +243,15 @@ async function onMsgSend() {
   const { choices } = resp.data
   messages.pop()
   for (const choice of choices) {
-    messages.push({ content: choice.message.content, sender: choice.message.role })
+    messages.push(new Message({ content: choice.message.content, sender: choice.message.role }))
   }
 }
 async function onRecordClick() {
   recording.value = !recording.value
   if (recording.value) {
-    messages.push({ content: RECORDING_FLAG, sender: 'self' })
+    messages.push(new Message({ content: RECORDING_FLAG, sender: 'self' }))
     await VoiceRecorder.startRecording()
   } else {
-    messages.pop()
     const { value } = await VoiceRecorder.stopRecording()
     const base64 = `data:${value.mimeType};base64,${value.recordDataBase64}`
     const blob = base64ToBlob(base64)
@@ -263,20 +260,20 @@ async function onRecordClick() {
     const data = (await ffmpeg.readFile('output.wav')) as Uint8Array
     const wavBlob = new Blob([data.buffer as ArrayBuffer], { type: 'audio/wav' })
     const wavHref = window.URL.createObjectURL(wavBlob)
-    messages.push({
+    const msg = new Message({
       content: `${VOICE_FLAG},${wavHref}`,
       sender: 'self'
     })
 
-    const link = document.createElement('a')
-    link.href = wavHref
-    link.download = 'output.wav'
-    link.style.display = 'none'
-    link.click()
-    link.remove()
+    // const link = document.createElement('a')
+    // link.href = wavHref
+    // link.download = 'output.wav'
+    // link.style.display = 'none'
+    // link.click()
+    // link.remove()
 
     const formData = new FormData()
-    formData.append('file', new File([wavBlob], 'output.wav', { type: wavBlob.type }))
+    formData.append('file', wavBlob, 'output.wav')
     const resp = await axios.post('/extract_text', formData, {
       baseURL: 'http://192.168.1.16:8000'
     })
@@ -284,6 +281,12 @@ async function onRecordClick() {
       return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)
     }
     console.log(resp.data)
+    const { results } = resp.data
+
+    messages.pop()
+    messages.push(msg)
+
+    await onMsgSend(results as string)
   }
 }
 </script>
