@@ -14,32 +14,35 @@
           <ion-button id="click-trigger">
             <ion-icon aria-hidden="true" :icon="ellipsisVertical" />
           </ion-button>
-          <ion-popover trigger="click-trigger" trigger-action="click">
+          <ion-popover ref="settingsPpv" trigger="click-trigger" trigger-action="click">
             <ion-content>
               <ion-list>
-                <ion-item button detail lines="none" id="mdlSettings">
+                <ion-item button detail lines="none" id="open-modal">
                   <ion-icon aria-hidden="true" slot="start" :icon="settings"></ion-icon>
                   <ion-label>Settings</ion-label>
                 </ion-item>
-                <ion-modal ref="settingsModal" trigger="mdlSettings">
+                <ion-modal
+                  ref="settingsMdl"
+                  trigger="open-modal"
+                  @willPresent="onSettingOpen"
+                  @didDismiss="() => settingsPpv.$el.dismiss(null, 'cancel')"
+                >
                   <ion-header>
                     <ion-toolbar>
                       <ion-title>Settings</ion-title>
                       <ion-buttons slot="end">
-                        <ion-button @click="() => settingsModal.$el.dismiss(null, 'cancel')">
-                          Cancel
-                        </ion-button>
+                        <ion-button @click="onSettingClose">Cancel</ion-button>
                       </ion-buttons>
                     </ion-toolbar>
                   </ion-header>
                   <ion-content class="ion-padding">
                     <ion-item>
                       <ion-input
-                        label="Base URL"
+                        label="Ollama URL"
                         label-placement="stacked"
                         type="text"
                         clearInput
-                        v-model="baseURL"
+                        v-model="settingForm.baseURL"
                       />
                     </ion-item>
                     <ion-item>
@@ -48,10 +51,20 @@
                         label-placement="stacked"
                         type="text"
                         clearInput
-                        v-model="apiKey"
+                        v-model="settingForm.apiKey"
+                      />
+                    </ion-item>
+                    <ion-item>
+                      <ion-input
+                        label="Sensevoice URL"
+                        label-placement="stacked"
+                        type="text"
+                        clearInput
+                        v-model="settingForm.ssvURL"
                       />
                     </ion-item>
                   </ion-content>
+                  <ion-button :strong="true" @click="onSettingSubmit">Confirm</ion-button>
                 </ion-modal>
               </ion-list>
             </ion-content>
@@ -138,7 +151,8 @@ import {
   IonSelectOption,
   IonLoading,
   IonModal,
-  IonInput
+  IonInput,
+  toastController
 } from '@ionic/vue'
 import { ellipsisVertical, mic, paperPlane, settings, add, stop } from 'ionicons/icons'
 import { reactive, ref } from 'vue'
@@ -156,9 +170,16 @@ const mdlIds = ref({})
 const selModel = ref('')
 const loading = ref(false)
 const recording = ref(false)
-const settingsModal = ref()
+const settingsMdl = ref()
+const settingsPpv = ref()
 const baseURL = ref('http://192.168.1.16:3000')
 const apiKey = ref('sk-7477291782ea4ac4a51b995a344a746c')
+const ssvURL = ref('http://192.168.1.16:8000')
+const settingForm = reactive({
+  baseURL: baseURL.value,
+  apiKey: apiKey.value,
+  ssvURL: ssvURL.value
+})
 const unpkgURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
 const ffmpeg = new FFmpeg()
 
@@ -275,7 +296,7 @@ async function onRecordClick() {
     const formData = new FormData()
     formData.append('file', wavBlob, 'output.wav')
     const resp = await axios.post('/extract_text', formData, {
-      baseURL: 'http://192.168.1.16:8000'
+      baseURL: ssvURL.value
     })
     if (resp.status !== 200) {
       return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)
@@ -288,6 +309,28 @@ async function onRecordClick() {
 
     await onMsgSend(results as string)
   }
+}
+async function onSettingSubmit() {
+  baseURL.value = settingForm.baseURL
+  apiKey.value = settingForm.apiKey
+  ssvURL.value = settingForm.ssvURL
+  settingsMdl.value.$el.dismiss(null, 'confirm')
+  await toastController
+    .create({
+      message: 'Settings Saved!',
+      duration: 1500,
+      position: 'top'
+    })
+    .then(toast => toast.present())
+}
+function onSettingOpen() {
+  settingForm.baseURL = baseURL.value
+  settingForm.apiKey = apiKey.value
+  settingForm.ssvURL = ssvURL.value
+  // settingsPpv.value.$el.dismiss(null, 'cancel')
+}
+function onSettingClose() {
+  settingsMdl.value.$el.dismiss(null, 'cancel')
 }
 </script>
 
