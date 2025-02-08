@@ -17,55 +17,23 @@
           <ion-popover ref="settingsPpv" trigger="click-trigger" trigger-action="click">
             <ion-content>
               <ion-list>
-                <ion-item button detail lines="none" id="open-modal">
+                <ion-item button detail lines="none" id="open-settings">
                   <ion-icon aria-hidden="true" slot="start" :icon="settings"></ion-icon>
                   <ion-label>Settings</ion-label>
                 </ion-item>
-                <ion-modal
-                  ref="settingsMdl"
-                  trigger="open-modal"
-                  @willPresent="onSettingOpen"
+                <SettingsDlg
+                  :settings="{ baseURL, apiKey, ssvURL }"
                   @didDismiss="() => settingsPpv.$el.dismiss(null, 'cancel')"
-                >
-                  <ion-header>
-                    <ion-toolbar>
-                      <ion-title>Settings</ion-title>
-                      <ion-buttons slot="end">
-                        <ion-button @click="onSettingClose">Cancel</ion-button>
-                      </ion-buttons>
-                    </ion-toolbar>
-                  </ion-header>
-                  <ion-content class="ion-padding">
-                    <ion-item>
-                      <ion-input
-                        label="Ollama URL"
-                        label-placement="stacked"
-                        type="text"
-                        clearInput
-                        v-model="settingForm.baseURL"
-                      />
-                    </ion-item>
-                    <ion-item>
-                      <ion-input
-                        label="API Key"
-                        label-placement="stacked"
-                        type="text"
-                        clearInput
-                        v-model="settingForm.apiKey"
-                      />
-                    </ion-item>
-                    <ion-item>
-                      <ion-input
-                        label="Sensevoice URL"
-                        label-placement="stacked"
-                        type="text"
-                        clearInput
-                        v-model="settingForm.ssvURL"
-                      />
-                    </ion-item>
-                  </ion-content>
-                  <ion-button :strong="true" @click="onSettingSubmit">Confirm</ion-button>
-                </ion-modal>
+                  @submit="form => ({ baseURL, apiKey, ssvURL } = form)"
+                />
+                <ion-item button detail lines="none" id="open-knowledge">
+                  <ion-icon aria-hidden="true" slot="start" :icon="book"></ion-icon>
+                  <ion-label>Knowledge</ion-label>
+                </ion-item>
+                <KnowledgeDlg
+                  :knowledge="{ anyApiKey, anyBaseURL, selKnLibIds }"
+                  @didDismiss="() => settingsPpv.$el.dismiss(null, 'cancel')"
+                />
               </ion-list>
             </ion-content>
           </ion-popover>
@@ -121,6 +89,14 @@
           </ion-row>
         </ion-grid>
       </ion-toolbar>
+      <!-- <ion-grid class="text-center border-solid border-x-0 border-b-0 border-gray-200 px-5">
+        <ion-row>
+          <ion-col size="3">1</ion-col>
+          <ion-col size="3">2</ion-col>
+          <ion-col size="3">3</ion-col>
+          <ion-col size="3">4</ion-col>
+        </ion-row>
+      </ion-grid> -->
     </ion-footer>
   </ion-page>
 </template>
@@ -150,11 +126,9 @@ import {
   IonSelect,
   IonSelectOption,
   IonLoading,
-  IonModal,
-  IonInput,
-  toastController
+  IonModal
 } from '@ionic/vue'
-import { ellipsisVertical, mic, paperPlane, settings, add, stop } from 'ionicons/icons'
+import { ellipsisVertical, mic, paperPlane, settings, add, stop, book } from 'ionicons/icons'
 import { reactive, ref } from 'vue'
 import msgCard from '@/components/msgCard.vue'
 import axios from 'axios'
@@ -163,6 +137,8 @@ import { VoiceRecorder } from 'capacitor-voice-recorder'
 import { alertMessage, base64ToBlob } from '@/utils'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile, toBlobURL } from '@ffmpeg/util'
+import SettingsDlg from '@/components/settingsDlg.vue'
+import KnowledgeDlg from '@/components/knowledgeDlg.vue'
 
 const messages = reactive<Message[]>([])
 const questText = ref<string>()
@@ -170,18 +146,15 @@ const mdlIds = ref({})
 const selModel = ref('')
 const loading = ref(false)
 const recording = ref(false)
-const settingsMdl = ref()
 const settingsPpv = ref()
 const baseURL = ref('http://192.168.1.16:3000')
 const apiKey = ref('sk-7477291782ea4ac4a51b995a344a746c')
 const ssvURL = ref('http://192.168.1.16:8000')
-const settingForm = reactive({
-  baseURL: baseURL.value,
-  apiKey: apiKey.value,
-  ssvURL: ssvURL.value
-})
 const unpkgURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
 const ffmpeg = new FFmpeg()
+const anyApiKey = ref('VRCZTWT-N8Z44KX-G7XYVSS-VTG5TTJ')
+const anyBaseURL = ref('http://192.168.1.16:3001')
+const selKnLibIds = ref<string[]>([])
 
 onMounted(async () => {
   loading.value = true
@@ -309,28 +282,6 @@ async function onRecordClick() {
 
     await onMsgSend(results as string)
   }
-}
-async function onSettingSubmit() {
-  baseURL.value = settingForm.baseURL
-  apiKey.value = settingForm.apiKey
-  ssvURL.value = settingForm.ssvURL
-  settingsMdl.value.$el.dismiss(null, 'confirm')
-  await toastController
-    .create({
-      message: 'Settings Saved!',
-      duration: 1500,
-      position: 'top'
-    })
-    .then(toast => toast.present())
-}
-function onSettingOpen() {
-  settingForm.baseURL = baseURL.value
-  settingForm.apiKey = apiKey.value
-  settingForm.ssvURL = ssvURL.value
-  // settingsPpv.value.$el.dismiss(null, 'cancel')
-}
-function onSettingClose() {
-  settingsMdl.value.$el.dismiss(null, 'cancel')
 }
 </script>
 
