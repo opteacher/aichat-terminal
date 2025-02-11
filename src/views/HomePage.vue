@@ -18,7 +18,7 @@
             <ion-content>
               <ion-list>
                 <ion-item button detail lines="none" id="open-settings">
-                  <ion-icon aria-hidden="true" slot="start" :icon="settings"></ion-icon>
+                  <ion-icon aria-hidden="true" slot="start" :icon="settingsOutline"></ion-icon>
                   <ion-label>Settings</ion-label>
                 </ion-item>
                 <SettingsDlg
@@ -27,7 +27,7 @@
                   @submit="form => ({ baseURL, apiKey, ssvURL } = form)"
                 />
                 <ion-item button detail lines="none" id="open-knowledge">
-                  <ion-icon aria-hidden="true" slot="start" :icon="book"></ion-icon>
+                  <ion-icon aria-hidden="true" slot="start" :icon="libraryOutline"></ion-icon>
                   <ion-label>Knowledge</ion-label>
                 </ion-item>
                 <KnowledgeDlg
@@ -128,7 +128,7 @@ import {
   IonLoading,
   IonModal
 } from '@ionic/vue'
-import { ellipsisVertical, mic, paperPlane, settings, add, stop, book } from 'ionicons/icons'
+import { ellipsisVertical, mic, paperPlane, add, stop, libraryOutline, settingsOutline } from 'ionicons/icons'
 import { reactive, ref } from 'vue'
 import msgCard from '@/components/msgCard.vue'
 import axios from 'axios'

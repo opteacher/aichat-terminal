@@ -1,6 +1,6 @@
 <template>
   <ion-modal
-    ref="modal"
+    ref="settingsMdl"
     trigger="open-settings"
     @willPresent="onSettingOpen"
     @didDismiss="$emit('didDismiss')"
@@ -9,7 +9,7 @@
       <ion-toolbar>
         <ion-title>Settings</ion-title>
         <ion-buttons slot="end">
-          <ion-button @click="() => modal.$el.dismiss(null, 'cancel')">Cancel</ion-button>
+          <ion-button @click="() => settingsMdl.$el.dismiss(null, 'cancel')">Cancel</ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -71,7 +71,7 @@ const emit = defineEmits(['didDismiss', 'submit'])
 const props = defineProps({
   settings: { type: Object as () => SettingsProps, required: true }
 })
-const modal = ref()
+const settingsMdl = ref()
 const formState = reactive({
   baseURL: props.settings.baseURL,
   apiKey: props.settings.apiKey,
@@ -80,7 +80,7 @@ const formState = reactive({
 
 async function onSettingSubmit() {
   emit('submit', formState)
-  modal.value.$el.dismiss(null, 'confirm')
+  settingsMdl.value.$el.dismiss(null, 'confirm')
   await toastController
     .create({
       message: 'Settings Saved!',
