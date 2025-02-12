@@ -39,7 +39,25 @@
     </ion-header>
 
     <ion-content>
-      <ion-accordion-group class="mt-5">
+      <ion-list class="mt-5">
+        <ion-item-sliding v-for="folder in folders">
+          <ion-item>
+            <ion-label>{{ folder.name }}</ion-label>
+          </ion-item>
+          <ion-item-options slot="end">
+            <ion-item-option color="tertiary">
+              <ion-icon slot="icon-only" :icon="share"></ion-icon>
+            </ion-item-option>
+            <ion-item-option color="warning">
+              <ion-icon slot="icon-only" :icon="folderOpen"></ion-icon>
+            </ion-item-option>
+            <ion-item-option color="danger">
+              <ion-icon slot="icon-only" :icon="trash"></ion-icon>
+            </ion-item-option>
+          </ion-item-options>
+        </ion-item-sliding>
+      </ion-list>
+      <!-- <ion-accordion-group class="mt-5">
         <ion-accordion v-for="folder in folders" :value="folder.name">
           <ion-item slot="header" color="light">
             <ion-label>
@@ -59,13 +77,13 @@
             </ion-list>
           </div>
         </ion-accordion>
-      </ion-accordion-group>
+      </ion-accordion-group> -->
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { add } from 'ionicons/icons'
+import { add, share, folderOpen, trash } from 'ionicons/icons'
 import {
   IonPage,
   IonHeader,
@@ -85,6 +103,9 @@ import {
   IonInput,
   IonBackButton,
   IonNote,
+  IonItemSliding,
+  IonItemOption,
+  IonItemOptions,
   toastController
 } from '@ionic/vue'
 import { reactive, ref } from 'vue'
@@ -130,11 +151,10 @@ async function refresh() {
       items: item.items.map((itm: any) => new Document(itm))
     }))
   )
-  console.log(folders.value)
 }
 async function onAddLibSubmit() {
   const resp = await axios.post(
-    '/v1/document/create-folder',
+    '/api/v1/document/create-folder',
     { name: addLibState.knlibName },
     { baseURL: anyBaseURL, headers: { Authorization: `Bearer ${anyApiKey}` } }
   )
@@ -147,6 +167,7 @@ async function onAddLibSubmit() {
       color: resp.status === 200 ? 'success' : 'danger'
     })
     .then(toast => toast.present())
+  await refresh()
 }
 function onRmvLibConfirm() {
   console.log('/api/system/remove-folder')
