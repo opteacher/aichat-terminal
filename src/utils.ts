@@ -1,6 +1,13 @@
 import { alertController } from '@ionic/vue'
 import lamejs from 'lamejs'
 
+export const baseURL = 'http://192.168.1.16:3000'
+export const apiKey = 'sk-7477291782ea4ac4a51b995a344a746c'
+export const ssvURL = 'http://192.168.1.16:8000'
+export const unpkgURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
+export const anyApiKey = 'VRCZTWT-N8Z44KX-G7XYVSS-VTG5TTJ'
+export const anyBaseURL = 'http://192.168.1.16:3001'
+
 export async function alertMessage(message: string, header?: string, subHeader?: string) {
   const alert = await alertController.create({
     header,

@@ -18,7 +18,7 @@
             <ion-content>
               <ion-list>
                 <ion-item button detail lines="none" id="open-settings">
-                  <ion-icon aria-hidden="true" slot="start" :icon="settingsOutline"></ion-icon>
+                  <ion-icon aria-hidden="true" slot="start" :icon="settings"></ion-icon>
                   <ion-label>Settings</ion-label>
                 </ion-item>
                 <SettingsDlg
@@ -27,10 +27,10 @@
                   @submit="form => ({ baseURL, apiKey, ssvURL } = form)"
                 />
                 <ion-item button detail lines="none" id="open-knowledge">
-                  <ion-icon aria-hidden="true" slot="start" :icon="libraryOutline"></ion-icon>
+                  <ion-icon aria-hidden="true" slot="start" :icon="library"></ion-icon>
                   <ion-label>Knowledge</ion-label>
                 </ion-item>
-                <KnowledgeDlg
+                <SelKnLibDlg
                   :knowledge="{ anyApiKey, anyBaseURL, selKnLibIds }"
                   @didDismiss="() => settingsPpv.$el.dismiss(null, 'cancel')"
                 />
@@ -128,17 +128,34 @@ import {
   IonLoading,
   IonModal
 } from '@ionic/vue'
-import { ellipsisVertical, mic, paperPlane, add, stop, libraryOutline, settingsOutline } from 'ionicons/icons'
+import {
+  ellipsisVertical,
+  mic,
+  paperPlane,
+  add,
+  stop,
+  library,
+  settings
+} from 'ionicons/icons'
 import { reactive, ref } from 'vue'
 import msgCard from '@/components/msgCard.vue'
 import axios from 'axios'
 import { onMounted } from 'vue'
 import { VoiceRecorder } from 'capacitor-voice-recorder'
-import { alertMessage, base64ToBlob } from '@/utils'
+import {
+  alertMessage,
+  apiKey,
+  base64ToBlob,
+  baseURL,
+  ssvURL,
+  unpkgURL,
+  anyApiKey,
+  anyBaseURL
+} from '@/utils'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile, toBlobURL } from '@ffmpeg/util'
 import SettingsDlg from '@/components/settingsDlg.vue'
-import KnowledgeDlg from '@/components/knowledgeDlg.vue'
+import SelKnLibDlg from '@/components/selKnLibDlg.vue'
 
 const messages = reactive<Message[]>([])
 const questText = ref<string>()
@@ -147,13 +164,7 @@ const selModel = ref('')
 const loading = ref(false)
 const recording = ref(false)
 const settingsPpv = ref()
-const baseURL = ref('http://192.168.1.16:3000')
-const apiKey = ref('sk-7477291782ea4ac4a51b995a344a746c')
-const ssvURL = ref('http://192.168.1.16:8000')
-const unpkgURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
 const ffmpeg = new FFmpeg()
-const anyApiKey = ref('VRCZTWT-N8Z44KX-G7XYVSS-VTG5TTJ')
-const anyBaseURL = ref('http://192.168.1.16:3001')
 const selKnLibIds = ref<string[]>([])
 
 onMounted(async () => {
@@ -187,9 +198,9 @@ onMounted(async () => {
   }
   // 获取所有可用模型
   const resp = await axios.get('/api/models', {
-    baseURL: baseURL.value,
+    baseURL: baseURL,
     headers: {
-      Authorization: `Bearer ${apiKey.value}`
+      Authorization: `Bearer ${apiKey}`
     }
   })
   if (resp.status !== 200) {
@@ -225,9 +236,9 @@ async function onMsgSend(content?: string) {
       ]
     },
     {
-      baseURL: baseURL.value,
+      baseURL: baseURL,
       headers: {
-        Authorization: `Bearer ${apiKey.value}`
+        Authorization: `Bearer ${apiKey}`
       }
     }
   )
@@ -269,7 +280,7 @@ async function onRecordClick() {
     const formData = new FormData()
     formData.append('file', wavBlob, 'output.wav')
     const resp = await axios.post('/extract_text', formData, {
-      baseURL: ssvURL.value
+      baseURL: ssvURL
     })
     if (resp.status !== 200) {
       return alertMessage(resp.statusText, 'Network Request Failed', 'Response Code ' + resp.status)

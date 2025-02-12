@@ -85,7 +85,8 @@ async function onSettingSubmit() {
     .create({
       message: 'Settings Saved!',
       duration: 1500,
-      position: 'top'
+      position: 'bottom',
+      color: 'success'
     })
     .then(toast => toast.present())
 }

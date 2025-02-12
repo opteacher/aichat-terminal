@@ -21,6 +21,6 @@ export default defineConfig({
     environment: 'jsdom'
   },
   optimizeDeps: {
-    exclude: ['@ffmpeg/ffmpeg']
+    exclude: ['@ffmpeg/ffmpeg', '.vite/deps/input-shims-NGV7W7MP.js']
   }
 })
