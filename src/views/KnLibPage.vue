@@ -32,58 +32,77 @@
                 />
               </ion-item>
             </ion-content>
-            <ion-button class="mx-2" @click="onAddLibSubmit">Submit</ion-button>
+            <ion-button @click="onAddLibSubmit">Submit</ion-button>
           </ion-modal>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content>
-      <ion-list class="mt-5">
-        <ion-item-sliding v-for="folder in folders">
-          <ion-item>
+    <ion-content class="ion-padding">
+      <ion-list>
+        <template v-for="folder in folders">
+          <ion-item
+            button
+            @click="() => (openFolder = openFolder === folder.name ? '' : folder.name)"
+          >
+            <ion-icon
+              slot="start"
+              :icon="openFolder === folder.name ? chevronDown : chevronForward"
+            />
             <ion-label>{{ folder.name }}</ion-label>
+            <ion-buttons slot="end">
+              <ion-button id="open-up-doc" @click.stop="onDocUpClick">
+                <ion-icon slot="icon-only" :icon="share" />
+              </ion-button>
+              <ion-button color="danger" @click.stop="() => (rmvDoc = folder.name)">
+                <ion-icon slot="icon-only" :icon="trash" />
+              </ion-button>
+            </ion-buttons>
           </ion-item>
-          <ion-item-options slot="end">
-            <ion-item-option color="tertiary">
-              <ion-icon slot="icon-only" :icon="share"></ion-icon>
-            </ion-item-option>
-            <ion-item-option color="warning">
-              <ion-icon slot="icon-only" :icon="folderOpen"></ion-icon>
-            </ion-item-option>
-            <ion-item-option color="danger">
-              <ion-icon slot="icon-only" :icon="trash"></ion-icon>
-            </ion-item-option>
-          </ion-item-options>
-        </ion-item-sliding>
+          <ion-list v-show="openFolder === folder.name" class="ion-padding">
+            <ion-item v-for="doc in folder.items" button>
+              <ion-label>
+                {{ doc.title }}
+                <br />
+                <ion-note>
+                  {{ doc.published.format('YYYY年MM月DD日 HH:mm:ss') }}
+                </ion-note>
+              </ion-label>
+              <ion-buttons slot="end">
+                <ion-button color="danger" @click.stop>
+                  <ion-icon slot="icon-only" :icon="trash" />
+                </ion-button>
+              </ion-buttons>
+            </ion-item>
+          </ion-list>
+        </template>
       </ion-list>
-      <!-- <ion-accordion-group class="mt-5">
-        <ion-accordion v-for="folder in folders" :value="folder.name">
-          <ion-item slot="header" color="light">
-            <ion-label>
-              <strong>{{ folder.name }}</strong>
-            </ion-label>
-          </ion-item>
-          <div class="ion-padding" slot="content">
-            <ion-list>
-              <ion-item v-for="doc in folder.items" button>
-                <ion-label>
-                  <ion-text color="tertiary">
-                    <h2>{{ doc.title }}</h2>
-                  </ion-text>
-                  <ion-note>{{ doc.published.format('YYYY年MM月DD日 HH:mm:ss') }}</ion-note>
-                </ion-label>
-              </ion-item>
-            </ion-list>
-          </div>
-        </ion-accordion>
-      </ion-accordion-group> -->
+      <ion-modal :is-open="addDocVsb">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>Add Document</ion-title>
+            <ion-buttons slot="end">
+              <ion-button @click="() => (addDocVsb = false)">Cancel</ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding"></ion-content>
+      </ion-modal>
     </ion-content>
+    <ion-action-sheet
+      :is-open="rmvDoc"
+      header="Make sure remove?"
+      :sub-header="
+        typeof rmvDoc === 'string' ? `【folder】：${rmvDoc}` : `【document】：${rmvDoc?.title}`
+      "
+      :buttons="actShtBtns"
+      @didDismiss="onRmvConfirm"
+    />
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { add, share, folderOpen, trash } from 'ionicons/icons'
+import { add, share, trash, chevronForward, chevronDown } from 'ionicons/icons'
 import {
   IonPage,
   IonHeader,
@@ -94,18 +113,13 @@ import {
   IonButton,
   IonContent,
   IonList,
-  IonAccordion,
-  IonAccordionGroup,
   IonItem,
   IonLabel,
-  IonText,
   IonModal,
   IonInput,
   IonBackButton,
   IonNote,
-  IonItemSliding,
-  IonItemOption,
-  IonItemOptions,
+  IonActionSheet,
   toastController
 } from '@ionic/vue'
 import { reactive, ref } from 'vue'
@@ -113,12 +127,34 @@ import axios from 'axios'
 import { anyApiKey, anyBaseURL } from '@/utils'
 import { onMounted } from 'vue'
 import Document from '@/types/document'
+import { File } from '@ionic-native/file'
+import { FileTransfer, FileTransferObject } from '@ionic-native/file-transfer'
 
 const knlibMdl = ref()
+const addDocVsb = ref(false)
 const addLibState = reactive({
   knlibName: ''
 })
 const folders = ref<{ name: string; items: Document[] }[]>([])
+const openFolder = ref('')
+const rmvDoc = ref<string | Document | null>(null)
+const actShtBtns = [
+  {
+    text: 'OK',
+    cssClass: 'text-red-500',
+    role: 'destructive',
+    data: {
+      action: 'remove'
+    }
+  },
+  {
+    text: 'Cancel',
+    role: 'cancel',
+    data: {
+      action: 'cancel'
+    }
+  }
+]
 
 onMounted(refresh)
 
@@ -169,7 +205,21 @@ async function onAddLibSubmit() {
     .then(toast => toast.present())
   await refresh()
 }
-function onRmvLibConfirm() {
-  console.log('/api/system/remove-folder')
+async function onRmvConfirm(e: CustomEvent) {
+  const { data } = e.detail
+  if (data.action === 'remove') {
+    if (typeof rmvDoc.value === 'string') {
+      await axios.delete('/api/system/remove-folder', {
+        data: { name: rmvDoc.value },
+        baseURL: anyBaseURL,
+        headers: { Authorization: `Bearer ${anyApiKey}` }
+      })
+    }
+  }
+  rmvDoc.value = null
+  await refresh()
+}
+function onDocUpClick() {
+
 }
 </script>
