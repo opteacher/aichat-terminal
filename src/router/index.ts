@@ -14,8 +14,8 @@ const routes: Array<RouteRecordRaw> = [
     component: HomePage
   },
   {
-    path: '/knLib',
-    name: 'KnLib',
+    path: '/knlib',
+    name: 'KnowledgeLibrary',
     component: KnLibPage
   }
 ]

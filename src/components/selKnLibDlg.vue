@@ -4,7 +4,7 @@
       <ion-toolbar>
         <ion-title>Select Knowledge Library</ion-title>
         <ion-buttons slot="end">
-          <ion-button @click="onSelKnLibClose(() => $router.push('/knLib'))">Manage</ion-button>
+          <ion-button @click="onSelKnLibClose(() => router.push('/knlib'))">Manage</ion-button>
           <ion-button @click="onSelKnLibClose">Cancel</ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -61,6 +61,7 @@ import {
 } from '@ionic/vue'
 import { folderOpen, informationCircleOutline, trash } from 'ionicons/icons'
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 interface KnowledgeProps {
   anyApiKey: string
@@ -71,6 +72,7 @@ const emit = defineEmits(['didDismiss', 'submit'])
 const props = defineProps({
   knowledge: { type: Object as () => KnowledgeProps, required: true }
 })
+const router = useRouter()
 const selKnLibMdl = ref()
 const formState = reactive({
   selKnLibIds: props.knowledge.selKnLibIds

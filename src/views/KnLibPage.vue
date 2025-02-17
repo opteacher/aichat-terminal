@@ -3,7 +3,7 @@
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button default-href="#" @click="$router.back()"></ion-back-button>
+          <ion-back-button default-href="#" @click="router.back()"></ion-back-button>
         </ion-buttons>
         <ion-title>Knowledge Library</ion-title>
         <ion-buttons slot="end">
@@ -41,39 +41,43 @@
     <ion-content class="ion-padding">
       <ion-list>
         <template v-for="folder in folders">
-          <ion-item
-            button
-            @click="() => (openFolder = openFolder === folder.name ? '' : folder.name)"
-          >
-            <ion-icon
-              slot="start"
-              :icon="openFolder === folder.name ? chevronDown : chevronForward"
-            />
-            <ion-label>{{ folder.name }}</ion-label>
-            <ion-buttons slot="end">
-              <ion-button id="open-up-doc" @click.stop="onDocUpClick">
-                <ion-icon slot="icon-only" :icon="share" />
-              </ion-button>
-              <ion-button color="danger" @click.stop="() => (rmvDoc = folder.name)">
-                <ion-icon slot="icon-only" :icon="trash" />
-              </ion-button>
-            </ion-buttons>
-          </ion-item>
-          <ion-list v-show="openFolder === folder.name" class="ion-padding">
-            <ion-item v-for="doc in folder.items" button>
-              <ion-label>
-                {{ doc.title }}
-                <br />
-                <ion-note>
-                  {{ doc.published.format('YYYY年MM月DD日 HH:mm:ss') }}
-                </ion-note>
-              </ion-label>
-              <ion-buttons slot="end">
-                <ion-button color="danger" @click.stop>
-                  <ion-icon slot="icon-only" :icon="trash" />
-                </ion-button>
-              </ion-buttons>
+          <ion-item-sliding>
+            <ion-item
+              button
+              @click="() => (openFolder = openFolder === folder.name ? '' : folder.name)"
+            >
+              <ion-icon
+                slot="start"
+                :icon="openFolder === folder.name ? chevronDown : chevronForward"
+              />
+              <ion-label>{{ folder.name }}</ion-label>
             </ion-item>
+            <ion-item-options slot="end">
+              <ion-item-option color="tertiary" @click.stop="() => uploadDoc.click()">
+                <ion-icon slot="icon-only" :icon="share"></ion-icon>
+              </ion-item-option>
+              <ion-item-option color="danger" @click.stop="() => (rmvDoc = folder.name)">
+                <ion-icon slot="icon-only" :icon="trash"></ion-icon>
+              </ion-item-option>
+            </ion-item-options>
+          </ion-item-sliding>
+          <ion-list v-show="openFolder === folder.name" class="ion-padding">
+            <ion-item-sliding v-for="doc in folder.items">
+              <ion-item button>
+                <ion-label>
+                  {{ doc.title }}
+                  <br />
+                  <ion-note>
+                    {{ doc.published.format('YYYY年MM月DD日 HH:mm:ss') }}
+                  </ion-note>
+                </ion-label>
+              </ion-item>
+              <ion-item-options slot="end">
+                <ion-item-option color="danger" @click.stop>
+                  <ion-icon slot="icon-only" :icon="trash"></ion-icon>
+                </ion-item-option>
+              </ion-item-options>
+            </ion-item-sliding>
           </ion-list>
         </template>
       </ion-list>
@@ -98,6 +102,7 @@
       :buttons="actShtBtns"
       @didDismiss="onRmvConfirm"
     />
+    <input ref="uploadDoc" class="hidden" type="file" @change="onUploadChange" />
   </ion-page>
 </template>
 
@@ -120,6 +125,9 @@ import {
   IonBackButton,
   IonNote,
   IonActionSheet,
+  IonItemSliding,
+  IonItemOption,
+  IonItemOptions,
   toastController
 } from '@ionic/vue'
 import { reactive, ref } from 'vue'
@@ -127,9 +135,9 @@ import axios from 'axios'
 import { anyApiKey, anyBaseURL } from '@/utils'
 import { onMounted } from 'vue'
 import Document from '@/types/document'
-import { File } from '@ionic-native/file'
-import { FileTransfer, FileTransferObject } from '@ionic-native/file-transfer'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const knlibMdl = ref()
 const addDocVsb = ref(false)
 const addLibState = reactive({
@@ -155,6 +163,7 @@ const actShtBtns = [
     }
   }
 ]
+const uploadDoc = ref()
 
 onMounted(refresh)
 
@@ -219,7 +228,8 @@ async function onRmvConfirm(e: CustomEvent) {
   rmvDoc.value = null
   await refresh()
 }
-function onDocUpClick() {
-
+function onUploadChange(e: Event) {
+  const ele = e.target as any
+  console.log(ele.files)
 }
 </script>

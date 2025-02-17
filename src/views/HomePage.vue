@@ -89,14 +89,6 @@
           </ion-row>
         </ion-grid>
       </ion-toolbar>
-      <!-- <ion-grid class="text-center border-solid border-x-0 border-b-0 border-gray-200 px-5">
-        <ion-row>
-          <ion-col size="3">1</ion-col>
-          <ion-col size="3">2</ion-col>
-          <ion-col size="3">3</ion-col>
-          <ion-col size="3">4</ion-col>
-        </ion-row>
-      </ion-grid> -->
     </ion-footer>
   </ion-page>
 </template>
