@@ -107,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { add, share, trash, chevronForward, chevronDown } from 'ionicons/icons'
+import { add, share, trash, chevronForward, chevronDown, qrCodeSharp } from 'ionicons/icons'
 import {
   IonPage,
   IonHeader,
@@ -136,6 +136,7 @@ import { anyApiKey, anyBaseURL } from '@/utils'
 import { onMounted } from 'vue'
 import Document from '@/types/document'
 import { useRouter } from 'vue-router'
+import qs from 'qs'
 
 const router = useRouter()
 const knlibMdl = ref()
@@ -216,7 +217,7 @@ async function onAddLibSubmit() {
 }
 async function onRmvConfirm(e: CustomEvent) {
   const { data } = e.detail
-  if (data.action === 'remove') {
+  if (data && data.action === 'remove') {
     if (typeof rmvDoc.value === 'string') {
       await axios.delete('/api/system/remove-folder', {
         data: { name: rmvDoc.value },
@@ -228,8 +229,37 @@ async function onRmvConfirm(e: CustomEvent) {
   rmvDoc.value = null
   await refresh()
 }
-function onUploadChange(e: Event) {
+async function onUploadChange(e: Event) {
   const ele = e.target as any
-  console.log(ele.files)
+  if (!ele.files.length) {
+    return
+  }
+  const formData = new FormData()
+  const file = ele.files[0] as File
+  const reader = new FileReader()
+  const blob = await new Promise<Blob>(resolve => {
+    reader.onload = e => resolve(new Blob([e.target?.result as ArrayBuffer]))
+    reader.readAsArrayBuffer(file)
+  })
+  formData.append('file', blob, file.name)
+  const resp = await axios.post('/api/v1/document/upload', formData, {
+    baseURL: anyBaseURL,
+    headers: {
+      Authorization: `Bearer ${anyApiKey}`
+    }
+  })
+  if (resp.status !== 200) {
+    toastController
+      .create({
+        message: 'Upload Document Failed!',
+        duration: 1500,
+        position: 'bottom',
+        color: 'danger'
+      })
+      .then(toast => toast.present())
+    return
+  }
+  console.log(resp.data)
+  await refresh()
 }
 </script>
