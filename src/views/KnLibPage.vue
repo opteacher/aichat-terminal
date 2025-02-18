@@ -73,7 +73,7 @@
                 </ion-label>
               </ion-item>
               <ion-item-options slot="end">
-                <ion-item-option color="danger" @click.stop>
+                <ion-item-option color="danger" @click.stop="() => (rmvDoc = doc)">
                   <ion-icon slot="icon-only" :icon="trash"></ion-icon>
                 </ion-item-option>
               </ion-item-options>
@@ -94,7 +94,7 @@
       </ion-modal>
     </ion-content>
     <ion-action-sheet
-      :is-open="rmvDoc"
+      :is-open="rmvDoc !== null"
       header="Make sure remove?"
       :sub-header="
         typeof rmvDoc === 'string' ? `【folder】：${rmvDoc}` : `【document】：${rmvDoc?.title}`
@@ -107,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { add, share, trash, chevronForward, chevronDown, qrCodeSharp } from 'ionicons/icons'
+import { add, share, trash, chevronForward, chevronDown } from 'ionicons/icons'
 import {
   IonPage,
   IonHeader,
@@ -136,7 +136,6 @@ import { anyApiKey, anyBaseURL } from '@/utils'
 import { onMounted } from 'vue'
 import Document from '@/types/document'
 import { useRouter } from 'vue-router'
-import qs from 'qs'
 
 const router = useRouter()
 const knlibMdl = ref()
@@ -194,7 +193,7 @@ async function refresh() {
     folders.value.length,
     ...localFiles.items.map((item: any) => ({
       name: item.name,
-      items: item.items.map((itm: any) => new Document(itm))
+      items: item.items.map((itm: any) => new Document({ ...itm, folders: [item.name] }))
     }))
   )
 }
@@ -224,9 +223,24 @@ async function onRmvConfirm(e: CustomEvent) {
         baseURL: anyBaseURL,
         headers: { Authorization: `Bearer ${anyApiKey}` }
       })
+    } else {
+      const doc = rmvDoc.value as Document
+      await axios.delete('/api/v1/system/remove-documents', {
+        data: { names: [doc.folders.map(fo => fo + '/').join('') + doc.name] },
+        baseURL: anyBaseURL,
+        headers: { Authorization: `Bearer ${anyApiKey}` }
+      })
     }
   }
   rmvDoc.value = null
+  toastController
+    .create({
+      message: 'Remove Document Succeed!',
+      duration: 1500,
+      position: 'bottom',
+      color: 'success'
+    })
+    .then(toast => toast.present())
   await refresh()
 }
 async function onUploadChange(e: Event) {
