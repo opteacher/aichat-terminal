@@ -102,7 +102,16 @@
       :buttons="actShtBtns"
       @didDismiss="onRmvConfirm"
     />
-    <input ref="uploadDoc" class="hidden" type="file" @change="onUploadChange" />
+    <form
+      ref="uploadForm"
+      class="hidden"
+      :action="`${anyBaseURL}/api/v1/document/upload`"
+      method="post"
+      enctype="multipart/form-data"
+      @submit="onDocUpload"
+    >
+      <input ref="uploadDoc" name="file" type="file" @change="onUploadChange" />
+    </form>
   </ion-page>
 </template>
 
@@ -164,6 +173,7 @@ const actShtBtns = [
   }
 ]
 const uploadDoc = ref()
+const uploadForm = ref()
 
 onMounted(refresh)
 
@@ -244,36 +254,44 @@ async function onRmvConfirm(e: CustomEvent) {
   await refresh()
 }
 async function onUploadChange(e: Event) {
-  const ele = e.target as any
-  if (!ele.files.length) {
-    return
-  }
-  const formData = new FormData()
-  const file = ele.files[0] as File
-  const reader = new FileReader()
-  const blob = await new Promise<Blob>(resolve => {
-    reader.onload = e => resolve(new Blob([e.target?.result as ArrayBuffer]))
-    reader.readAsArrayBuffer(file)
-  })
-  formData.append('file', blob, file.name)
-  const resp = await axios.post('/api/v1/document/upload', formData, {
-    baseURL: anyBaseURL,
-    headers: {
-      Authorization: `Bearer ${anyApiKey}`
-    }
-  })
-  if (resp.status !== 200) {
-    toastController
-      .create({
-        message: 'Upload Document Failed!',
-        duration: 1500,
-        position: 'bottom',
-        color: 'danger'
-      })
-      .then(toast => toast.present())
-    return
-  }
-  console.log(resp.data)
-  await refresh()
+  uploadForm.value.submit()
+  // const ele = e.target as any
+  // if (!ele.files.length) {
+  //   return
+  // }
+  // const formData = new FormData()
+  // const file = ele.files[0] as File
+  // const reader = new FileReader()
+  // const blob = await new Promise<Blob>(resolve => {
+  //   reader.onload = e => resolve(new Blob([e.target?.result as ArrayBuffer]))
+  //   reader.readAsArrayBuffer(file)
+  // })
+  // formData.append('file', blob, file.name)
+  // const resp = await axios.post('/api/v1/document/upload', formData, {
+  //   baseURL: anyBaseURL,
+  //   headers: {
+  //     Authorization: `Bearer ${anyApiKey}`
+  //   }
+  // })
+  // if (resp.status !== 200) {
+  //   toastController
+  //     .create({
+  //       message: 'Upload Document Failed!',
+  //       duration: 1500,
+  //       position: 'bottom',
+  //       color: 'danger'
+  //     })
+  //     .then(toast => toast.present())
+  //   return
+  // }
+  // console.log(resp.data)
+  // await refresh()
+}
+function onDocUpload(e: SubmitEvent) {
+  e.preventDefault()
+  const xhr = new XMLHttpRequest()
+  xhr.open('POST', `${anyBaseURL}/api/v1/document/upload`, true)
+  xhr.setRequestHeader('Authorization', `Bearer ${anyApiKey}`)
+  xhr.send(new FormData(e.target as HTMLFormElement))
 }
 </script>
