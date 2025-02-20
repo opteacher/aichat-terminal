@@ -2,10 +2,10 @@
   <ion-modal ref="selKnLibMdl" trigger="open-knowledge" @didDismiss="$emit('didDismiss')">
     <ion-header>
       <ion-toolbar>
-        <ion-title>Select Knowledge Library</ion-title>
+        <ion-title>选择知识库</ion-title>
         <ion-buttons slot="end">
           <ion-button @click="onSelKnLibClose(() => router.push('/knlib'))">Manage</ion-button>
-          <ion-button @click="onSelKnLibClose">Cancel</ion-button>
+          <ion-button @click="onSelKnLibClose">取消</ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -35,7 +35,7 @@
         </ion-item-sliding>
       </ion-list>
     </ion-content>
-    <ion-button :strong="true" @click="onSelKnLibSubmit">Confirm</ion-button>
+    <ion-button :strong="true" @click="onSelKnLibSubmit">确认</ion-button>
   </ion-modal>
 </template>
 

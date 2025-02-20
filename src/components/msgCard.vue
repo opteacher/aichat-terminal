@@ -11,7 +11,7 @@
       <ion-spinner v-if="message.content === LOADING_FLAG" name="dots" />
       <ion-item v-else-if="message.content === RECORDING_FLAG">
         <ion-spinner slot="start" />
-        <ion-label>Recording</ion-label>
+        <ion-label>录音中</ion-label>
       </ion-item>
       <audio v-else-if="isVoice" controls>
         <source :src="mdContent" type="audio/webm" />

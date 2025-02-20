@@ -5,35 +5,80 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="#" @click="router.back()"></ion-back-button>
         </ion-buttons>
-        <ion-title>Knowledge Library</ion-title>
+        <ion-title>知识库</ion-title>
         <ion-buttons slot="end">
-          <ion-button id="open-add-knlib">
+          <ion-button id="new-knlib">
             <ion-icon slot="icon-only" :icon="add" />
           </ion-button>
-          <ion-modal ref="knlibMdl" trigger="open-add-knlib">
-            <ion-header>
-              <ion-toolbar>
-                <ion-title>Add Knowledge Library</ion-title>
-                <ion-buttons slot="end">
-                  <ion-button @click="() => knlibMdl.$el.dismiss(null, 'cancel')">
-                    Cancel
-                  </ion-button>
-                </ion-buttons>
-              </ion-toolbar>
-            </ion-header>
-            <ion-content class="ion-padding">
-              <ion-item>
-                <ion-input
-                  label="Knowledge Library Name"
-                  label-placement="stacked"
-                  type="text"
-                  placeholder="Enter Library name"
-                  v-model="addLibState.knlibName"
-                />
-              </ion-item>
+          <ion-popover ref="settingsPpv" trigger="new-knlib" trigger-action="click">
+            <ion-content>
+              <ion-list>
+                <ion-item button detail lines="none" id="open-add-knlib">
+                  <ion-icon aria-hidden="true" slot="start" :icon="library"></ion-icon>
+                  <ion-label>新增</ion-label>
+                </ion-item>
+                <ion-modal ref="addKnlibMdl" trigger="open-add-knlib">
+                  <ion-header>
+                    <ion-toolbar>
+                      <ion-title>新增知识库</ion-title>
+                      <ion-buttons slot="end">
+                        <ion-button @click="() => addKnlibMdl.$el.dismiss(null, 'cancel')">
+                          取消
+                        </ion-button>
+                      </ion-buttons>
+                    </ion-toolbar>
+                  </ion-header>
+                  <ion-content class="ion-padding">
+                    <ion-item>
+                      <ion-input
+                        label="名称"
+                        label-placement="stacked"
+                        type="text"
+                        placeholder="输入知识库名"
+                        v-model="addLibState.knlibName"
+                      />
+                    </ion-item>
+                    <ion-item>
+                      <ion-toggle>
+                        <ion-label>公开知识库</ion-label>
+                        <ion-note color="medium">选择公开则他人可以导入</ion-note>
+                      </ion-toggle>
+                    </ion-item>
+                  </ion-content>
+                  <ion-button @click="onAddLibSubmit">确定</ion-button>
+                </ion-modal>
+                <ion-item button detail lines="none" id="open-input-knlib">
+                  <ion-icon aria-hidden="true" slot="start" :icon="fileTrayFull"></ion-icon>
+                  <ion-label>导入</ion-label>
+                </ion-item>
+                <ion-modal ref="iptKnlibMdl" trigger="open-input-knlib">
+                  <ion-header>
+                    <ion-toolbar>
+                      <ion-title>导入知识库</ion-title>
+                      <ion-buttons slot="end">
+                        <ion-button @click="() => iptKnlibMdl.$el.dismiss(null, 'cancel')">
+                          取消
+                        </ion-button>
+                      </ion-buttons>
+                    </ion-toolbar>
+                  </ion-header>
+                  <ion-content class="ion-padding">
+                    <ion-list :inset="true">
+                      <ion-item button>
+                        <ion-label>
+                          abcd
+                          <br />
+                          <ion-note>adsasdasd</ion-note>
+                        </ion-label>
+                        <ion-checkbox slot="end"></ion-checkbox>
+                      </ion-item>
+                    </ion-list>
+                  </ion-content>
+                  <ion-button @click="onAddLibSubmit">确定</ion-button>
+                </ion-modal>
+              </ion-list>
             </ion-content>
-            <ion-button @click="onAddLibSubmit">Submit</ion-button>
-          </ion-modal>
+          </ion-popover>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -61,18 +106,15 @@
               </ion-item-option>
             </ion-item-options>
           </ion-item-sliding>
-          <ion-list v-show="openFolder === folder.name" class="ion-padding">
+          <ion-list v-show="openFolder === folder.name">
             <ion-item-sliding v-for="doc in folder.items">
               <ion-item button>
-                <ion-label>
-                  {{ doc.title }}
-                  <br />
-                  <ion-note>
-                    {{ doc.published.format('YYYY年MM月DD日 HH:mm:ss') }}
-                  </ion-note>
-                </ion-label>
+                <ion-label>{{ doc.title }}</ion-label>
               </ion-item>
               <ion-item-options slot="end">
+                <ion-item-option color="tertiary" @click.stop>
+                  <ion-icon slot="icon-only" :icon="informationCircleOutline"></ion-icon>
+                </ion-item-option>
                 <ion-item-option color="danger" @click.stop="() => (rmvDoc = doc)">
                   <ion-icon slot="icon-only" :icon="trash"></ion-icon>
                 </ion-item-option>
@@ -84,7 +126,7 @@
       <ion-modal :is-open="addDocVsb">
         <ion-header>
           <ion-toolbar>
-            <ion-title>Add Document</ion-title>
+            <ion-title>新增文档</ion-title>
             <ion-buttons slot="end">
               <ion-button @click="() => (addDocVsb = false)">Cancel</ion-button>
             </ion-buttons>
@@ -93,30 +135,27 @@
         <ion-content class="ion-padding"></ion-content>
       </ion-modal>
     </ion-content>
-    <ion-action-sheet
+    <ion-alert
       :is-open="rmvDoc !== null"
-      header="Make sure remove?"
-      :sub-header="
-        typeof rmvDoc === 'string' ? `【folder】：${rmvDoc}` : `【document】：${rmvDoc?.title}`
-      "
+      header="确认删除该文档？"
+      :message="typeof rmvDoc === 'string' ? `【知识库】：${rmvDoc}` : `【文档】：${rmvDoc?.title}`"
       :buttons="actShtBtns"
-      @didDismiss="onRmvConfirm"
     />
-    <form
-      ref="uploadForm"
-      class="hidden"
-      :action="`${anyBaseURL}/api/v1/document/upload`"
-      method="post"
-      enctype="multipart/form-data"
-      @submit="onDocUpload"
-    >
-      <input ref="uploadDoc" name="file" type="file" @change="onUploadChange" />
-    </form>
+    <input class="hidden" ref="uploadDoc" name="file" type="file" @change="onUploadChange" />
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { add, share, trash, chevronForward, chevronDown } from 'ionicons/icons'
+import {
+  add,
+  share,
+  trash,
+  chevronForward,
+  chevronDown,
+  informationCircleOutline,
+  library,
+  fileTrayFull
+} from 'ionicons/icons'
 import {
   IonPage,
   IonHeader,
@@ -132,11 +171,14 @@ import {
   IonModal,
   IonInput,
   IonBackButton,
-  IonNote,
-  IonActionSheet,
+  IonAlert,
   IonItemSliding,
   IonItemOption,
   IonItemOptions,
+  IonPopover,
+  IonToggle,
+  IonNote,
+  IonCheckbox,
   toastController
 } from '@ionic/vue'
 import { reactive, ref } from 'vue'
@@ -147,7 +189,8 @@ import Document from '@/types/document'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const knlibMdl = ref()
+const addKnlibMdl = ref()
+const iptKnlibMdl = ref()
 const addDocVsb = ref(false)
 const addLibState = reactive({
   knlibName: ''
@@ -157,23 +200,18 @@ const openFolder = ref('')
 const rmvDoc = ref<string | Document | null>(null)
 const actShtBtns = [
   {
-    text: 'OK',
+    text: '确定',
     cssClass: 'text-red-500',
-    role: 'destructive',
-    data: {
-      action: 'remove'
-    }
+    role: 'confirm',
+    handler: onRmvConfirm
   },
   {
-    text: 'Cancel',
+    text: '取消',
     role: 'cancel',
-    data: {
-      action: 'cancel'
-    }
+    handler: () => (rmvDoc.value = null)
   }
 ]
 const uploadDoc = ref()
-const uploadForm = ref()
 
 onMounted(refresh)
 
@@ -213,7 +251,7 @@ async function onAddLibSubmit() {
     { name: addLibState.knlibName },
     { baseURL: anyBaseURL, headers: { Authorization: `Bearer ${anyApiKey}` } }
   )
-  knlibMdl.value.$el.dismiss(addLibState, 'submit')
+  addKnlibMdl.value.$el.dismiss(addLibState, 'submit')
   toastController
     .create({
       message: `Add Library ${resp.status === 200 ? 'Succeed' : 'Failed'}!`,
@@ -224,28 +262,25 @@ async function onAddLibSubmit() {
     .then(toast => toast.present())
   await refresh()
 }
-async function onRmvConfirm(e: CustomEvent) {
-  const { data } = e.detail
-  if (data && data.action === 'remove') {
-    if (typeof rmvDoc.value === 'string') {
-      await axios.delete('/api/system/remove-folder', {
-        data: { name: rmvDoc.value },
-        baseURL: anyBaseURL,
-        headers: { Authorization: `Bearer ${anyApiKey}` }
-      })
-    } else {
-      const doc = rmvDoc.value as Document
-      await axios.delete('/api/v1/system/remove-documents', {
-        data: { names: [doc.folders.map(fo => fo + '/').join('') + doc.name] },
-        baseURL: anyBaseURL,
-        headers: { Authorization: `Bearer ${anyApiKey}` }
-      })
-    }
+async function onRmvConfirm() {
+  if (typeof rmvDoc.value === 'string') {
+    await axios.delete('/api/system/remove-folder', {
+      data: { name: rmvDoc.value },
+      baseURL: anyBaseURL,
+      headers: { Authorization: `Bearer ${anyApiKey}` }
+    })
+  } else {
+    const doc = rmvDoc.value as Document
+    await axios.delete('/api/v1/system/remove-documents', {
+      data: { names: [doc.folders.map(fo => fo + '/').join('') + doc.name] },
+      baseURL: anyBaseURL,
+      headers: { Authorization: `Bearer ${anyApiKey}` }
+    })
   }
   rmvDoc.value = null
   toastController
     .create({
-      message: 'Remove Document Succeed!',
+      message: '删除文档成功！',
       duration: 1500,
       position: 'bottom',
       color: 'success'
@@ -254,44 +289,31 @@ async function onRmvConfirm(e: CustomEvent) {
   await refresh()
 }
 async function onUploadChange(e: Event) {
-  uploadForm.value.submit()
-  // const ele = e.target as any
-  // if (!ele.files.length) {
-  //   return
-  // }
-  // const formData = new FormData()
-  // const file = ele.files[0] as File
-  // const reader = new FileReader()
-  // const blob = await new Promise<Blob>(resolve => {
-  //   reader.onload = e => resolve(new Blob([e.target?.result as ArrayBuffer]))
-  //   reader.readAsArrayBuffer(file)
-  // })
-  // formData.append('file', blob, file.name)
-  // const resp = await axios.post('/api/v1/document/upload', formData, {
-  //   baseURL: anyBaseURL,
-  //   headers: {
-  //     Authorization: `Bearer ${anyApiKey}`
-  //   }
-  // })
-  // if (resp.status !== 200) {
-  //   toastController
-  //     .create({
-  //       message: 'Upload Document Failed!',
-  //       duration: 1500,
-  //       position: 'bottom',
-  //       color: 'danger'
-  //     })
-  //     .then(toast => toast.present())
-  //   return
-  // }
-  // console.log(resp.data)
-  // await refresh()
-}
-function onDocUpload(e: SubmitEvent) {
-  e.preventDefault()
-  const xhr = new XMLHttpRequest()
-  xhr.open('POST', `${anyBaseURL}/api/v1/document/upload`, true)
-  xhr.setRequestHeader('Authorization', `Bearer ${anyApiKey}`)
-  xhr.send(new FormData(e.target as HTMLFormElement))
+  const ele = e.target as any
+  if (!ele.files.length) {
+    return
+  }
+  const formData = new FormData()
+  const file = ele.files[0] as File
+  formData.append('file', file, file.name)
+  const resp = await axios.post('/api/v1/document/upload', formData, {
+    baseURL: anyBaseURL,
+    headers: {
+      Authorization: `Bearer ${anyApiKey}`
+    }
+  })
+  if (resp.status !== 200) {
+    toastController
+      .create({
+        message: 'Upload Document Failed!',
+        duration: 1500,
+        position: 'bottom',
+        color: 'danger'
+      })
+      .then(toast => toast.present())
+    return
+  }
+  console.log(resp.data)
+  await refresh()
 }
 </script>

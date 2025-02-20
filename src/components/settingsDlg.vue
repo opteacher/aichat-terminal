@@ -7,9 +7,9 @@
   >
     <ion-header>
       <ion-toolbar>
-        <ion-title>Settings</ion-title>
+        <ion-title>配置</ion-title>
         <ion-buttons slot="end">
-          <ion-button @click="() => settingsMdl.$el.dismiss(null, 'cancel')">Cancel</ion-button>
+          <ion-button @click="() => settingsMdl.$el.dismiss(null, 'cancel')">取消</ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -42,7 +42,7 @@
         />
       </ion-item>
     </ion-content>
-    <ion-button :strong="true" @click="onSettingSubmit">Confirm</ion-button>
+    <ion-button :strong="true" @click="onSettingSubmit">保存</ion-button>
   </ion-modal>
 </template>
 

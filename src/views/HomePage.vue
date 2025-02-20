@@ -1,5 +1,5 @@
 <template>
-  <ion-loading :is-open="loading" message="Loading Models" />
+  <ion-loading :is-open="loading" message="加载模型……" />
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
@@ -19,7 +19,7 @@
               <ion-list>
                 <ion-item button detail lines="none" id="open-settings">
                   <ion-icon aria-hidden="true" slot="start" :icon="settings"></ion-icon>
-                  <ion-label>Settings</ion-label>
+                  <ion-label>设置</ion-label>
                 </ion-item>
                 <SettingsDlg
                   :settings="{ baseURL, apiKey, ssvURL }"
@@ -28,7 +28,7 @@
                 />
                 <ion-item button detail lines="none" id="open-knowledge">
                   <ion-icon aria-hidden="true" slot="start" :icon="library"></ion-icon>
-                  <ion-label>Knowledge</ion-label>
+                  <ion-label>知识库</ion-label>
                 </ion-item>
                 <SelKnLibDlg
                   :knowledge="{ anyApiKey, anyBaseURL, selKnLibIds }"
@@ -69,7 +69,7 @@
             </ion-col>
             <ion-col>
               <ion-textarea
-                placeholder="Input something"
+                placeholder="与模型对话"
                 fill="outline"
                 required
                 v-model="questText"
@@ -117,8 +117,7 @@ import {
   IonInfiniteScrollContent,
   IonSelect,
   IonSelectOption,
-  IonLoading,
-  IonModal
+  IonLoading
 } from '@ionic/vue'
 import {
   ellipsisVertical,
